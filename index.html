@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Resume Builder - OpenAI</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    /* Reset and base */
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #0f0c29, #302b63, #f8cdda);
+      margin: 0;
+      padding: 0 10px 40px;
+      min-height: 100vh;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow-x: hidden;
+    }
+    header {
+      text-align: center;
+      padding: 40px 20px 20px;
+      user-select: none;
+    }
+    header h2 {
+      margin: 0 0 8px;
+      font-weight: 600;
+      font-size: 2rem;
+    }
+    header h3 {
+      margin: 0;
+      font-weight: 400;
+      font-size: 1rem;
+      opacity: 0.85;
+    }
+
+    .robot-container {
+      margin-bottom: 30px;
+      text-align: center;
+      user-select: none;
+    }
+    .robot-container img {
+      width: 150px;
+      animation: wave 2.5s infinite ease-in-out;
+      display: inline-block;
+    }
+    @keyframes wave {
+      0%, 100% { transform: rotate(0deg); }
+      50% { transform: rotate(8deg); }
+    }
+
+    form#resumeForm {
+      background: rgba(255 255 255 / 0.1);
+      padding: 25px 30px 35px;
+      border-radius: 12px;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
+      backdrop-filter: blur(10px);
+      width: 100%;
+      max-width: 420px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      user-select: text;
+    }
+
+    .form-step {
+      display: none;
+      flex-direction: column;
+      gap: 15px;
+      animation: fadeIn 0.4s ease forwards;
+    }
+    .form-step.active {
+      display: flex;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="number"],
+    textarea {
+      width: 100%;
+      padding: 10px 14px;
+      font-size: 1rem;
+      border-radius: 8px;
+      border: none;
+      outline: none;
+      resize: vertical;
+      background: rgba(255 255 255 / 0.85);
+      color: #111;
+      transition: box-shadow 0.3s ease;
+    }
+    input[type="text"]:focus,
+    input[type="email"]:focus,
+    input[type="number"]:focus,
+    textarea:focus {
+      box-shadow: 0 0 5px 2px #ff7e5f;
+      background: #fff;
+    }
+
+    button {
+      padding: 12px 24px;
+      background-color: #ff7e5f;
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      align-self: flex-end;
+      transition: background-color 0.3s ease;
+      user-select: none;
+      min-width: 110px;
+    }
+    button:hover:not(:disabled) {
+      background-color: #eb4d4b;
+    }
+    button:disabled {
+      background-color: #caa89b;
+      cursor: not-allowed;
+    }
+
+    #projects textarea {
+      background: rgba(255 255 255 / 0.9);
+      color: #111;
+    }
+
+    /* Wave background */
+    .wave-container {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      z-index: -1;
+      user-select: none;
+    }
+    .wave-container img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      header h2 {
+        font-size: 1.5rem;
+      }
+      form#resumeForm {
+        max-width: 100%;
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h2>📝 Resume Builder - Powered by OpenAI</h2>
+    <h3>Version 0.3 • Smarter Resume Creation</h3>
+  </header>
+
+  <div class="robot-container">
+    <img src="RobotSaludando.gif" alt="Waving Robot" />
+  </div>
+
+  <form id="resumeForm" novalidate>
+    <div class="form-step active">
+      <input type="text" name="name" placeholder="Your Name" required autocomplete="name" />
+      <input type="text" name="address" placeholder="Your Address" required autocomplete="street-address" />
+      <input type="text" name="phone" placeholder="Phone Number" required autocomplete="tel" pattern="[0-9+\-\s]{7,}" title="Please enter a valid phone number" />
+      <input type="email" name="email" placeholder="Email" required autocomplete="email" />
+      <button type="button" onclick="nextStep()">Next</button>
+    </div>
+
+    <div class="form-step">
+      <input type="text" name="university" placeholder="University Name" required autocomplete="organization" />
+      <input type="text" name="degree" placeholder="Degree (e.g., B.Tech)" required />
+      <input type="text" name="branch" placeholder="Branch (e.g., CSE, Mechanical)" required />
+      <textarea name="objective" placeholder="Career Objective" rows="4" required></textarea>
+      <button type="button" onclick="nextStep()">Next</button>
+    </div>
+
+    <div class="form-step">
+      <textarea name="skills" placeholder="List your skills (e.g., Python, AutoCAD, etc.)" rows="4"></textarea>
+      <input type="number" name="projectCount" placeholder="Number of Projects" min="0" onchange="addProjectInputs(this.value)" />
+      <div id="projects"></div>
+      <textarea name="certifications" placeholder="Certifications (comma separated)" rows="2"></textarea>
+      <textarea name="interests" placeholder="Interests or Hobbies" rows="2"></textarea>
+      <textarea name="additional" placeholder="Any additional information" rows="3"></textarea>
+      <button type="submit">Generate Resume</button>
+    </div>
+  </form>
+
+  <div class="wave-container" aria-hidden="true">
+    <picture>
+      <source srcset="images/wave.avif" type="image/avif" />
+      <source srcset="images/wave.png" type="image/png" />
+      <img src="images/wave.png" alt="Wave Background" />
+    </picture>
+  </div>
+
+  <script>
+    const steps = document.querySelectorAll('.form-step');
+    let currentStep = 0;
+
+    function validateStep(stepIndex) {
+      const step = steps[stepIndex];
+      const inputs = step.querySelectorAll('input, textarea');
+      for (const input of inputs) {
+        if (input.required && !input.value.trim()) {
+          alert(`Please fill the required field: "${input.placeholder}"`);
+          input.focus();
+          return false;
+        }
+        if (input.type === 'email' && input.value) {
+          // Basic email validation
+          const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailPattern.test(input.value)) {
+            alert('Please enter a valid email address.');
+            input.focus();
+            return false;
+          }
+        }
+        if (input.name === 'phone' && input.value) {
+          const phonePattern = /^[0-9+\-\s]{7,}$/;
+          if (!phonePattern.test(input.value)) {
+            alert('Please enter a valid phone number.');
+            input.focus();
+            return false;
+          }
+        }
+      }
+      return true;
+    }
+
+    function nextStep() {
+      if (!validateStep(currentStep)) return;
+
+      if (currentStep < steps.length - 1) {
+        steps[currentStep].classList.remove('active');
+        currentStep++;
+        steps[currentStep].classList.add('active');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+
+    function addProjectInputs(count) {
+      const container = document.getElementById('projects');
+      container.innerHTML = '';
+      const n = parseInt(count);
+      if (!isNaN(n) && n > 0) {
+        for (let i = 1; i <= n; i++) {
+          const textarea = document.createElement('textarea');
+          textarea.name = `project_${i}`;
+          textarea.placeholder = `Project ${i} Title & Description`;
+          textarea.rows = 3;
+          textarea.required = true;
+          container.appendChild(textarea);
+        }
+      }
+    }
+
+    document.getElementById('resumeForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      if (!validateStep(currentStep)) return;
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const data = new FormData(e.target);
+      let y = 10;
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const margin = 10;
+      const maxWidth = pageWidth - margin * 2;
+
+      function addWrappedText(label, value) {
+        if (value && value.trim() !== '') {
+          doc.setFont(undefined, 'bold');
+          doc.text(`${label}:`, margin, y);
+          y += 7;
+          doc.setFont(undefined, 'normal');
+          const splitText = doc.splitTextToSize(value, maxWidth);
+          doc.text(splitText, margin, y);
+          y += splitText.length * 7 + 4;
+          // Add page break if y gets too low
+          if (y > doc.internal.pageSize.getHeight() - 20) {
+            doc.addPage();
+            y = 10;
+          }
+        }
+      }
+
+      addWrappedText("Name", data.get('name'));
+      addWrappedText("Address", data.get('address'));
+      addWrappedText("Phone", data.get('phone'));
+      addWrappedText("Email", data.get('email'));
+      addWrappedText("University", data.get('university'));
+      addWrappedText("Degree", `${data.get('degree')} in ${data.get('branch')}`);
+      addWrappedText("Objective", data.get('objective'));
+      addWrappedText("Skills", data.get('skills'));
+
+      const projectCount = parseInt(data.get('projectCount')) || 0;
+      if (projectCount > 0) {
+        addWrappedText("Projects", "");
+        for (let i = 1; i <= projectCount; i++) {
+          addWrappedText(`Project ${i}`, data.get(`project_${i}`));
+        }
+      }
+
+      addWrappedText("Certifications", data.get('certifications'));
+      addWrappedText("Interests", data.get('interests'));
+      addWrappedText("Additional Info", data.get('additional'));
+
+      doc.save(`${data.get('name') || 'resume'}_Resume.pdf`);
+    });
+  </script>
+</body>
+</html>
